@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"gopkg.in/yaml.v2"
 	"log"
-	"os"
+	"messanger/libs/utils"
 )
 
 type DBConfig struct {
@@ -15,38 +15,42 @@ type DBConfig struct {
 	DBName   string `yaml:"database"`
 }
 
+type MigrationsConfig struct {
+	FolderPath string `yaml:"folder_path"`
+}
+
+type MetaConfig struct {
+	Migrations MigrationsConfig `yaml:"migrations"`
+}
+
 type Config struct {
-	DB DBConfig `yaml:"db"`
+	DB   DBConfig   `yaml:"db"`
+	Meta MetaConfig `yaml:"meta"`
 }
 
-func ReadConfig(filePath string) ([]byte, error) {
-	file, err := os.Open(filePath)
-	defer file.Close()
-	if err != nil {
-		log.Fatalln("Could not read file at: ", filePath)
-		return nil, err
-	}
-	var data []byte
-	_, err = file.Read(data)
-	if err != nil {
-		log.Fatalln("Could not read data from file at: ", filePath)
-		return nil, err
-	}
-	return data, nil
-}
-
-func GetDBConnectionString() (string, error) {
+func InitConfig() Config {
 	configData := Config{}
-	data, err := ReadConfig("config/config.yml")
+	configData.getConfig()
+	return configData
+}
+
+func (c *Config) getConfig() {
+	data, err := utils.ReadConfig("config/config.yml")
 	if err != nil {
-		return "", err
+		return
 	}
-	err = yaml.Unmarshal(data, &configData)
+	err = yaml.Unmarshal(data, &c)
 	if err != nil {
 		log.Fatalln("Error reading configuration!")
-		return "", err
 	}
-	result := fmt.Sprintf("postgres://%v:%v@%v:%v/%v", configData.DB.User, configData.DB.Password,
-		configData.DB.Host, configData.DB.Port, configData.DB.DBName)
-	return result, nil
+}
+
+func (c Config) GetDBConnectionString() string {
+	result := fmt.Sprintf("postgres://%v:%v@%v:%v/%v", c.DB.User, c.DB.Password,
+		c.DB.Host, c.DB.Port, c.DB.DBName)
+	return result
+}
+
+func (c Config) GetPathToMigrationsFolder() string {
+	return c.Meta.Migrations.FolderPath
 }

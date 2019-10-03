@@ -4,3 +4,6 @@ db:
   user: postgres
   password: some-password
   database: some-database
+meta:
+  migrations:
+    folder_path: libs/infrastructure/database/migrations
