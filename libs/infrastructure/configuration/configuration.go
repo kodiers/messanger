@@ -46,7 +46,7 @@ func (c *Config) getConfig() {
 }
 
 func (c Config) GetDBConnectionString() string {
-	result := fmt.Sprintf("postgres://%v:%v@%v:%v/%v", c.DB.User, c.DB.Password,
+	result := fmt.Sprintf("postgres://%v:%v@%v:%v/%v?sslmode=disable", c.DB.User, c.DB.Password,
 		c.DB.Host, c.DB.Port, c.DB.DBName)
 	return result
 }
