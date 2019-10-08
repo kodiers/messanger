@@ -1,31 +1,15 @@
 package utils
 
 import (
+	"io/ioutil"
 	"log"
-	"os"
 )
 
 func ReadConfig(filePath string) ([]byte, error) {
-	file, err := os.Open(filePath)
-	defer file.Close()
+	data, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		log.Fatalln("Could not read file at: ", filePath)
-		return nil, err
-	}
-	var data []byte
-	_, err = file.Read(data)
-	if err != nil {
-		log.Fatalln("Could not read data from file at: ", filePath)
+		log.Println("Could not read data from file at: ", filePath)
 		return nil, err
 	}
 	return data, nil
-}
-
-func Contains(sl []string, e string) bool {
-	for _, s := range sl {
-		if s == e {
-			return true
-		}
-	}
-	return false
 }
