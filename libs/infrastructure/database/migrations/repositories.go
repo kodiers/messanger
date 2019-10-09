@@ -20,9 +20,9 @@ func InitMigrationRepository(folderPath string, db *sql.DB) MigrationRepository 
 	return MigrationRepository{FolderPath: folderPath, TableName: "migrations", DB: db}
 }
 
-func (mr MigrationRepository) GetAppliedMigrationsFromDb(db *sql.DB) ([]Migration, bool) {
+func (mr MigrationRepository) GetAppliedMigrationsFromDb() ([]Migration, bool) {
 	query := fmt.Sprintf("SELECT id, name, created FROM %v;", mr.TableName)
-	rows, err := repositories.SelectQuery(db, query)
+	rows, err := repositories.SelectQuery(mr.DB, query)
 	if err != nil {
 		if rows != nil {
 			_ = rows.Close()
@@ -33,7 +33,7 @@ func (mr MigrationRepository) GetAppliedMigrationsFromDb(db *sql.DB) ([]Migratio
 	migrations := make([]Migration, 0)
 	for rows.Next() {
 		migration := new(Migration)
-		err := rows.Scan(migration.Id, migration.Name, migration.Created)
+		err := rows.Scan(&migration.Id, &migration.Name, &migration.Created)
 		if err != nil {
 			log.Println("Could not read rows data", err)
 		}
@@ -59,14 +59,14 @@ func (mr MigrationRepository) GetMigrationsFiles() ([]string, bool) {
 	return files, true
 }
 
-func (mr MigrationRepository) ApplyMigration(db *sql.DB, filePath string) bool {
+func (mr MigrationRepository) ApplyMigration(filePath string) bool {
 	data, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		log.Println("Error reading file: ", filePath, " error: ", err)
 		return false
 	}
 	queries := string(data)
-	err = repositories.RunCreateInsertQuery(db, queries)
+	err = repositories.RunCreateInsertQuery(mr.DB, queries)
 	if err != nil {
 		log.Println("Error on running migration")
 		return false

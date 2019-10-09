@@ -21,7 +21,7 @@ func ConnectToDb(conStr string) *sql.DB {
 
 func RunMigrations(migrationsFolder string, db *sql.DB) {
 	repo := migrations2.InitMigrationRepository(migrationsFolder, db)
-	migrations, ok := repo.GetAppliedMigrationsFromDb(db)
+	migrations, ok := repo.GetAppliedMigrationsFromDb()
 	files, _ := repo.GetMigrationsFiles()
 	if !ok {
 		log.Println("Cannot get info from migration table.")
@@ -29,7 +29,7 @@ func RunMigrations(migrationsFolder string, db *sql.DB) {
 	var notAppliedMigrations []string
 	if migrations != nil && len(migrations) > 0 {
 		for _, m := range migrations {
-			if utils.Contains(files, m.Name) {
+			if !utils.Contains(files, m.Name) {
 				notAppliedMigrations = append(notAppliedMigrations, m.Name)
 			}
 		}
@@ -40,7 +40,7 @@ func RunMigrations(migrationsFolder string, db *sql.DB) {
 	}
 
 	for _, m := range notAppliedMigrations {
-		ok := repo.ApplyMigration(db, m)
+		ok := repo.ApplyMigration(m)
 		if ok {
 			repo.CreateMigrationRecord(m)
 		}
