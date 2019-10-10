@@ -27,19 +27,19 @@ func RunMigrations(migrationsFolder string, db *sql.DB) {
 		log.Println("Cannot get info from migration table.")
 	}
 	var notAppliedMigrations []string
-	if migrations != nil && len(migrations) > 0 {
-		for _, m := range migrations {
-			if !utils.Contains(files, m.Name) {
-				notAppliedMigrations = append(notAppliedMigrations, m.Name)
-			}
+	var appliedMigrations []string
+	for _, m := range migrations {
+		appliedMigrations = append(appliedMigrations, m.Name)
+	}
+	for _, f := range files {
+		if len(appliedMigrations) > 0 && utils.Contains(appliedMigrations, f) {
+			continue
 		}
-	} else {
-		for _, f := range files {
-			notAppliedMigrations = append(notAppliedMigrations, f)
-		}
+		notAppliedMigrations = append(notAppliedMigrations, f)
 	}
 
 	for _, m := range notAppliedMigrations {
+		log.Println("Applying migration: ", m)
 		ok := repo.ApplyMigration(m)
 		if ok {
 			repo.CreateMigrationRecord(m)
