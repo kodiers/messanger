@@ -3,9 +3,9 @@ package migrations
 import (
 	"database/sql"
 	"fmt"
+	"github.com/lib/pq"
 	"io/ioutil"
 	"log"
-	"messanger/libs/infrastructure/database/repositories"
 	"os"
 	"path/filepath"
 )
@@ -21,8 +21,7 @@ func InitMigrationRepository(folderPath string, db *sql.DB) MigrationRepository 
 }
 
 func (mr MigrationRepository) GetAppliedMigrationsFromDb() ([]Migration, bool) {
-	query := fmt.Sprintf("SELECT id, name, created FROM %v;", mr.TableName)
-	rows, err := repositories.SelectQuery(mr.DB, query)
+	rows, err := mr.DB.Query("SELECT id, name, created FROM $1;", mr.TableName)
 	if err != nil {
 		if rows != nil {
 			_ = rows.Close()
@@ -66,17 +65,17 @@ func (mr MigrationRepository) ApplyMigration(filePath string) bool {
 		return false
 	}
 	queries := string(data)
-	err = repositories.RunCreateInsertQuery(mr.DB, queries)
+	_, err = mr.DB.Exec(queries)
 	if err != nil {
-		log.Println("Error on running migration")
+		log.Println("Error on running migration", err)
 		return false
 	}
 	return true
 }
 
 func (mr MigrationRepository) CreateMigrationRecord(migrationName string) bool {
-	query := fmt.Sprintf("INSERT INTO %v (name) VALUES ('%v');", mr.TableName, migrationName)
-	err := repositories.RunCreateInsertQuery(mr.DB, query)
+	quoted := pq.QuoteIdentifier(mr.TableName)
+	_, err := mr.DB.Exec(fmt.Sprintf("INSERT INTO %s (name) VALUES ($1);", quoted), migrationName)
 	if err != nil {
 		log.Println("Error on create migration log. ", err)
 		return false
