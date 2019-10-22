@@ -21,7 +21,8 @@ func InitMigrationRepository(folderPath string, db *sql.DB) MigrationRepository 
 }
 
 func (mr MigrationRepository) GetAppliedMigrationsFromDb() ([]Migration, bool) {
-	rows, err := mr.DB.Query("SELECT id, name, created FROM $1;", mr.TableName)
+	quoted := pq.QuoteIdentifier(mr.TableName)
+	rows, err := mr.DB.Query(fmt.Sprintf("SELECT id, name, created FROM %s;", quoted))
 	if err != nil {
 		if rows != nil {
 			_ = rows.Close()

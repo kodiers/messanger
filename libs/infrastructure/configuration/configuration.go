@@ -1,9 +1,11 @@
 package configuration
 
 import (
+	"database/sql"
 	"fmt"
 	"gopkg.in/yaml.v2"
 	"log"
+	"messanger/libs/infrastructure/database"
 	"messanger/libs/utils"
 )
 
@@ -23,10 +25,18 @@ type MetaConfig struct {
 	Migrations MigrationsConfig `yaml:"migrations"`
 }
 
-type Config struct {
-	DB   DBConfig   `yaml:"db"`
-	Meta MetaConfig `yaml:"meta"`
+type SessionsConfig struct {
+	Expiration int64 `yaml:"expiration"`
 }
+
+type Config struct {
+	DB      DBConfig       `yaml:"db"`
+	Meta    MetaConfig     `yaml:"meta"`
+	Session SessionsConfig `yaml:"sessions"`
+}
+
+var Conf Config
+var DB *sql.DB
 
 func InitConfig() Config {
 	configData := Config{}
@@ -53,4 +63,9 @@ func (c Config) GetDBConnectionString() string {
 
 func (c Config) GetPathToMigrationsFolder() string {
 	return c.Meta.Migrations.FolderPath
+}
+
+func init() {
+	Conf = InitConfig()
+	DB = database.ConnectToDb(Conf.GetDBConnectionString())
 }

@@ -7,3 +7,5 @@ db:
 meta:
   migrations:
     folder_path: libs/infrastructure/database/migrations
+sessions:
+  expiration: 3600
