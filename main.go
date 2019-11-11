@@ -4,16 +4,14 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"log"
 	"messanger/libs/infrastructure/configuration"
-	db2 "messanger/libs/infrastructure/database"
+	"messanger/libs/infrastructure/database"
 	"messanger/users"
 	"net/http"
 )
 
 func main() {
 	// Preparing to launch
-	config := configuration.InitConfig()
-	db := db2.ConnectToDb(config.GetDBConnectionString())
-	db2.RunMigrations("migrations", db)
+	database.RunMigrations("migrations", configuration.DB)
 
 	// Add routes
 	router := httprouter.New()

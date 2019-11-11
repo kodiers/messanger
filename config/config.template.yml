@@ -7,5 +7,6 @@ db:
 meta:
   migrations:
     folder_path: libs/infrastructure/database/migrations
+  secret_key: some-secret-key
 sessions:
   expiration: 3600

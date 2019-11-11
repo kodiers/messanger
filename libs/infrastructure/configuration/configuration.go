@@ -23,6 +23,7 @@ type MigrationsConfig struct {
 
 type MetaConfig struct {
 	Migrations MigrationsConfig `yaml:"migrations"`
+	SecretKey  string           `yaml:"secret_key"`
 }
 
 type SessionsConfig struct {
@@ -63,6 +64,10 @@ func (c Config) GetDBConnectionString() string {
 
 func (c Config) GetPathToMigrationsFolder() string {
 	return c.Meta.Migrations.FolderPath
+}
+
+func (c Config) GetSecretKey() string {
+	return c.Meta.SecretKey
 }
 
 func init() {
