@@ -15,7 +15,7 @@ func main() {
 
 	// Add routes
 	router := httprouter.New()
-	router.GET("/users/register", users.Register)
+	router.POST("/users/register", users.Register)
 
 	log.Fatalln(http.ListenAndServe(":80", router))
 }

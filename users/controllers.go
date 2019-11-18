@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/julienschmidt/httprouter"
+	"io/ioutil"
 	"messanger/libs/http/token"
 	"messanger/libs/infrastructure/configuration"
 	"net/http"
@@ -11,37 +12,36 @@ import (
 
 var userRepository = InitUserRepository(configuration.DB)
 
-type Response struct {
-	Status string      `json:"status"`
-	Data   interface{} `json:"data"`
-}
-
 func Register(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	if token.IsValidToken(r.Header) {
 		http.Error(w, "You should not be authenticated.", http.StatusBadRequest)
 		return
 	}
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed.", http.StatusMethodNotAllowed)
+	var userRegistration UserRegistration
+	bs, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Error reading data from request.", http.StatusInternalServerError)
 		return
 	}
-	username := r.FormValue("username")
-	password := r.FormValue("password")
-	passwordConfirmation := r.FormValue("passwordConfirmation")
-	if username == "" || password == "" || passwordConfirmation == "" {
+	err = json.Unmarshal(bs, &userRegistration)
+	if err != nil {
+		http.Error(w, "Error pasring data from request.", http.StatusInternalServerError)
+		return
+	}
+	if userRegistration.Username == "" || userRegistration.Password == "" || userRegistration.PasswordConfirmation == "" {
 		http.Error(w, "Username, password or passwordConfirmation is empty.", http.StatusBadRequest)
 		return
 	}
-	_, err := userRepository.getUserByUsername(username)
+	_, err = userRepository.getUserByUsername(userRegistration.Username)
 	if err == nil {
 		http.Error(w, "Username with this username already exists.", http.StatusBadRequest)
 		return
 	}
 	user := User{
-		Username: username,
-		Password: password,
+		Username: userRegistration.Username,
+		Password: userRegistration.Password,
 	}
-	isValidPassword, _ := user.IsValidPassword(password)
+	isValidPassword, _ := user.IsValidPassword(userRegistration.Password)
 	if !isValidPassword {
 		http.Error(w,
 			fmt.Sprintf("Password should be %v and contains characters in upper and lower case.", PasswordLength),
