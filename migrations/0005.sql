@@ -1,1 +1,0 @@
-ALTER TABLE sessions ADD UNIQUE (TOKEN);

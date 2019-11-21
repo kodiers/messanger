@@ -1,21 +1,17 @@
 package token
 
 import (
-	"database/sql"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
+	"log"
 	"messanger/libs/infrastructure/configuration"
 	"net/http"
 	"time"
 )
 
-const hmacSampleSecret = "eyJhbGciOiAiUlMyNTYiLCAia2lkIjogInNvbWUta2V5LW5hbWUifQ==.eyJob3N0IjogImlkLnJhbWJsZXIucnUiLCAidXJpIjogIi9ycGMiLCAibWV0aG9kIjogInBvc3QiLCAiaGVhZGVycyI6ICIiLCAiY3RpbWUiOiAxNTcxMDU3ODIyLjQ1M"
+const hmacSecret = "eyJhbGciOiAiUlMyNTYiLCAia2lkIjogInNvbWUta2V5LW5hbWUifQ==.eyJob3N0IjogImlkLnJhbWJsZXIucnUiLCAidXJpIjogIi9ycGMiLCAibWV0aG9kIjogInBvc3QiLCAiaGVhZGVycyI6ICIiLCAiY3RpbWUiOiAxNTcxMDU3ODIyLjQ1M"
 
-type Token struct {
-	UserID  int
-	Token   string
-	Expired time.Time
-}
+var expiration = configuration.Conf.Session.Expiration
 
 func isValidJwt(tokenStr string) jwt.MapClaims {
 	token, _ := jwt.Parse(tokenStr, func(token *jwt.Token) (i interface{}, e error) {
@@ -30,23 +26,16 @@ func isValidJwt(tokenStr string) jwt.MapClaims {
 	return nil
 }
 
-var tokenRepository = InitTokenRepository(configuration.DB, configuration.Conf.Session.Expiration)
-
-func makeToken(userdId int, token string, expiration time.Time) Token {
-	sess := Token{
-		UserID:  userdId,
-		Token:   token,
-		Expired: expiration,
+func MakeJWT(userId int) string {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"userId":     userId,
+		"expiration": int64(time.Now().Second()) + expiration,
+	})
+	tokenString, err := token.SignedString(hmacSecret)
+	if err != nil {
+		log.Println("could not create token.")
 	}
-	return sess
-}
-
-func (t Token) isExpired() bool {
-	return t.Expired.Second() < time.Now().Second()
-}
-
-func (t Token) isValidUser(db *sql.DB) bool {
-	return false
+	return tokenString
 }
 
 func IsValidToken(header http.Header) bool {
@@ -61,15 +50,7 @@ func IsValidToken(header http.Header) bool {
 
 	_, userOk := tokenValues["userId"].(int)
 	_, expireOk := tokenValues["expiration"].(time.Time)
-	tokenId, tokenOk := tokenValues["tokenId"].(string)
-	if !userOk || !expireOk || !tokenOk {
-		return false
-	}
-	tokenObj, err := tokenRepository.GetTokenFromDb(tokenId)
-	if err != nil {
-		return false
-	}
-	if tokenObj.isExpired() {
+	if !userOk || !expireOk {
 		return false
 	}
 	return true

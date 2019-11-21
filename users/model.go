@@ -69,3 +69,7 @@ func (u *User) SetUserPasswordHash() {
 func (u *User) Save() {
 
 }
+
+func (u *User) Login() {
+
+}
