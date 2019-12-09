@@ -6,17 +6,15 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"io/ioutil"
 	"messanger/libs/http/token"
-	"messanger/libs/infrastructure/configuration"
 	"net/http"
 )
 
-var userRepository = InitUserRepository(configuration.DB)
-
 func Register(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	if token.IsValidToken(r.Header) {
+	if IsAuthenticated(r.Header) {
 		http.Error(w, "You should not be authenticated.", http.StatusBadRequest)
 		return
 	}
+
 	var userRegistration UserRegistration
 	bs, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -32,7 +30,7 @@ func Register(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		http.Error(w, "Username, password or passwordConfirmation is empty.", http.StatusBadRequest)
 		return
 	}
-	_, err = userRepository.getUserByUsername(userRegistration.Username)
+	_, err = UserRep.GetUserByUsername(userRegistration.Username)
 	if err == nil {
 		http.Error(w, "Username with this username already exists.", http.StatusBadRequest)
 		return
@@ -49,7 +47,7 @@ func Register(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 	user.SetUserPasswordHash()
-	_, err = userRepository.InsertUser(&user)
+	_, err = UserRep.InsertUser(&user)
 	if err != nil {
 		http.Error(w, "Cannot create new user", http.StatusInternalServerError)
 		return
@@ -71,7 +69,7 @@ func Register(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 }
 
 func Login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	if token.IsValidToken(r.Header) {
+	if IsAuthenticated(r.Header) {
 		http.Error(w, "You should not be authenticated.", http.StatusBadRequest)
 		return
 	}
@@ -90,7 +88,7 @@ func Login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		http.Error(w, "Username or password is empty.", http.StatusBadRequest)
 		return
 	}
-	user, err := userRepository.getUserByUsername(userLogin.Username)
+	user, err := UserRep.GetUserByUsername(userLogin.Username)
 	if err != nil {
 		http.Error(w, "Username with this username could not be found.", http.StatusBadRequest)
 		return

@@ -1,7 +1,6 @@
 package token
 
 import (
-	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"log"
 	"messanger/libs/infrastructure/configuration"
@@ -13,25 +12,32 @@ const hmacSecret = "eyJhbGciOiAiUlMyNTYiLCAia2lkIjogInNvbWUta2V5LW5hbWUifQ==.eyJ
 
 var expiration = configuration.Conf.Session.Expiration
 
-func isValidJwt(tokenStr string) jwt.MapClaims {
-	token, _ := jwt.Parse(tokenStr, func(token *jwt.Token) (i interface{}, e error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return true, nil
+type MyCustomClaims struct {
+	UserId int `json:"user_id"`
+	jwt.StandardClaims
+}
+
+func GetClaims(tokenStr string) (MyCustomClaims, bool) {
+	token, _ := jwt.ParseWithClaims(tokenStr, &MyCustomClaims{}, func(token *jwt.Token) (i interface{}, e error) {
+		return []byte(hmacSecret), nil
 	})
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		return claims
+	if token.Valid {
+		claims, _ := token.Claims.(*MyCustomClaims)
+		return *claims, true
 	}
-	return nil
+	return MyCustomClaims{}, false
 }
 
 func MakeJWT(userId int) string {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"userId":     userId,
-		"expiration": int64(time.Now().Second()) + expiration,
-	})
-	tokenString, err := token.SignedString(hmacSecret)
+	claims := &MyCustomClaims{
+		userId,
+		jwt.StandardClaims{
+			ExpiresAt: time.Now().Unix() + expiration,
+			Issuer:    "messenger-app",
+		},
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString([]byte(hmacSecret))
 	if err != nil {
 		log.Println("could not create token.")
 	}
@@ -43,14 +49,8 @@ func IsValidToken(header http.Header) bool {
 	if !ok {
 		return false
 	}
-	tokenValues := isValidJwt(token[0])
-	if tokenValues == nil {
-		return false
-	}
-
-	_, userOk := tokenValues["userId"].(int)
-	_, expireOk := tokenValues["expiration"].(time.Time)
-	if !userOk || !expireOk {
+	_, ok = GetClaims(token[0])
+	if !ok {
 		return false
 	}
 	return true

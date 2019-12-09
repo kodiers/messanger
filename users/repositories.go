@@ -3,6 +3,7 @@ package users
 import (
 	"database/sql"
 	"log"
+	"messanger/libs/infrastructure/configuration"
 )
 
 type UserRepository struct {
@@ -16,7 +17,9 @@ func InitUserRepository(db *sql.DB) UserRepository {
 	}
 }
 
-func (uc *UserRepository) getUserById(id int) (User, error) {
+var UserRep = InitUserRepository(configuration.DB)
+
+func (uc *UserRepository) GetUserById(id int) (User, error) {
 	row := uc.DB.QueryRow("SELECT * FROM USERS WHERE id=$1", id)
 	user := new(User)
 	err := row.Scan(&user.ID, &user.Username, &user.LastLogin, &user.PasswordHash, &user.Created, &user.Updated)
@@ -27,7 +30,7 @@ func (uc *UserRepository) getUserById(id int) (User, error) {
 	return *user, nil
 }
 
-func (uc *UserRepository) getUserByUsername(name string) (User, error) {
+func (uc *UserRepository) GetUserByUsername(name string) (User, error) {
 	row := uc.DB.QueryRow("SELECT * FROM USERS WHERE username=$1", name)
 	user := new(User)
 	err := row.Scan(&user.ID, &user.Username, &user.LastLogin, &user.PasswordHash, &user.Created, &user.Updated)
@@ -45,7 +48,7 @@ func (uc *UserRepository) InsertUser(user *User) (*User, error) {
 		log.Println("Could not create user record ", err)
 		return nil, err
 	}
-	createdUser, err := uc.getUserByUsername(user.Username)
+	createdUser, err := uc.GetUserByUsername(user.Username)
 	if err != nil {
 		log.Println("Could not get user record ", err)
 		return nil, err
