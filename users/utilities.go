@@ -8,6 +8,10 @@ import (
 )
 
 func IsAuthenticated(header http.Header) bool {
+	_, ok := header["Authentication"]
+	if !ok {
+		return false
+	}
 	_, err := GetUserFromHeader(header)
 	if err != nil {
 		return false

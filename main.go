@@ -17,6 +17,7 @@ func main() {
 	router := httprouter.New()
 	router.POST("/users/register", users.Register)
 	router.POST("/users/login", users.Login)
+	router.GET("/users/list", users.AuthenticationMiddleware(users.UsersList))
 
 	log.Fatalln(http.ListenAndServe(":80", router))
 }

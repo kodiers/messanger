@@ -55,3 +55,22 @@ func (uc *UserRepository) InsertUser(user *User) (*User, error) {
 	}
 	return &createdUser, nil
 }
+
+func (uc *UserRepository) GetUsers() ([]User, error) {
+	rows, err := uc.DB.Query("SELECT id, username FROM USERS;")
+	if err != nil {
+		log.Panicln("Could not get users from db", err)
+		return nil, err
+	}
+	users := make([]User, 0)
+	for rows.Next() {
+		user := new(User)
+		err := rows.Scan(&user.ID, &user.Username)
+		if err != nil {
+			log.Println("Could not read rows data", err)
+		}
+		users = append(users, *user)
+	}
+	_ = rows.Close()
+	return users, nil
+}

@@ -46,7 +46,7 @@ func MakeJWT(userId int) string {
 
 func IsValidToken(header http.Header) bool {
 	token, ok := header["Authentication"]
-	if !ok {
+	if !ok || token[0] == "" {
 		return false
 	}
 	_, ok = GetClaims(token[0])

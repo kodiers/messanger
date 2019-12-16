@@ -125,3 +125,29 @@ func Login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 }
+
+func UsersList(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	users, err := UserRep.GetUsers()
+	if err != nil {
+		http.Error(w, "Unknown error.", http.StatusInternalServerError)
+		return
+	}
+	if len(users) == 0 {
+		http.Error(w, "Not users found.", http.StatusNotFound)
+		return
+	}
+	response := Response{
+		Status: "Ok",
+		Data:   users,
+	}
+	responseData, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, "Cannot parse data to JSON", http.StatusInternalServerError)
+		return
+	}
+	_, err = fmt.Fprintf(w, string(responseData))
+	if err != nil {
+		http.Error(w, "Cannot send data", http.StatusInternalServerError)
+		return
+	}
+}
