@@ -6,6 +6,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"log"
 	"messanger/libs/infrastructure/configuration"
+	"sync"
 	"time"
 	"unicode"
 )
@@ -23,6 +24,8 @@ type User struct {
 	Created      time.Time `json:"created"`
 	Updated      time.Time `json:"updated"`
 }
+
+var UserUpdateMutex sync.Mutex
 
 func (u *User) IsValidPassword(password string) (bool, error) {
 	if len(password) < PasswordLength {
@@ -64,12 +67,4 @@ func (u *User) MakePasswordHash(password string) []byte {
 
 func (u *User) SetUserPasswordHash() {
 	u.PasswordHash = string(u.MakePasswordHash(u.Password))
-}
-
-func (u *User) Save() {
-
-}
-
-func (u *User) Login() {
-
 }

@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"messanger/libs/http/token"
 	"net/http"
+	"time"
 )
 
 func Register(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -36,8 +37,9 @@ func Register(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 	user := User{
-		Username: userRegistration.Username,
-		Password: userRegistration.Password,
+		Username:  userRegistration.Username,
+		Password:  userRegistration.Password,
+		LastLogin: time.Now(),
 	}
 	isValidPassword, _ := user.IsValidPassword(userRegistration.Password)
 	if !isValidPassword {
@@ -54,7 +56,7 @@ func Register(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	}
 	response := Response{
 		Status: "User created successfully",
-		Data:   user,
+		Data:   CreateUserResponseWithoutPassHash(&user),
 	}
 	responseData, err := json.Marshal(response)
 	if err != nil {
@@ -110,6 +112,7 @@ func Login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		http.Error(w, "Error while signing in.", http.StatusInternalServerError)
 		return
 	}
+	go UserRep.UpdateUserLastLogin(user)
 	response := Response{
 		Status: "Logged in.",
 		Data:   createdToken,
@@ -136,9 +139,14 @@ func UsersList(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		http.Error(w, "Not users found.", http.StatusNotFound)
 		return
 	}
+	var usersResponse []UserResponseWithoutPasswordHash
+	for _, user := range users {
+		userResponse := CreateUserResponseWithoutPassHash(&user)
+		usersResponse = append(usersResponse, userResponse)
+	}
 	response := Response{
 		Status: "Ok",
-		Data:   users,
+		Data:   usersResponse,
 	}
 	responseData, err := json.Marshal(response)
 	if err != nil {
