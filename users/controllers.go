@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/julienschmidt/httprouter"
 	"io/ioutil"
+	"messanger/libs/http/contracts"
 	"messanger/libs/http/token"
 	"net/http"
 	"time"
@@ -54,7 +55,7 @@ func Register(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		http.Error(w, "Cannot create new user", http.StatusInternalServerError)
 		return
 	}
-	response := Response{
+	response := contracts.Response{
 		Status: "User created successfully",
 		Data:   CreateUserResponseWithoutPassHash(&user),
 	}
@@ -113,7 +114,7 @@ func Login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 	go UserRep.UpdateUserLastLogin(user)
-	response := Response{
+	response := contracts.Response{
 		Status: "Logged in.",
 		Data:   createdToken,
 	}
@@ -144,7 +145,7 @@ func UsersList(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		userResponse := CreateUserResponseWithoutPassHash(&user)
 		usersResponse = append(usersResponse, userResponse)
 	}
-	response := Response{
+	response := contracts.Response{
 		Status: "Ok",
 		Data:   usersResponse,
 	}

@@ -13,11 +13,6 @@ type UserLogin struct {
 	Password string `json:"password"`
 }
 
-type Response struct {
-	Status string      `json:"status"`
-	Data   interface{} `json:"data"`
-}
-
 type UserResponseWithoutPasswordHash struct {
 	ID        int    `json:"id"`
 	Username  string `json:"username"`

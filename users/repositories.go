@@ -5,6 +5,7 @@ import (
 	"github.com/lib/pq"
 	"log"
 	"messanger/libs/infrastructure/configuration"
+	"messanger/libs/utils"
 	"time"
 )
 
@@ -21,11 +22,6 @@ func InitUserRepository(db *sql.DB) UserRepository {
 
 var UserRep = InitUserRepository(configuration.DB)
 
-func (uc *UserRepository) loadLocation() time.Location {
-	location, _ := time.LoadLocation("Europe/Moscow")
-	return *location
-}
-
 func (uc *UserRepository) parseUserFromRow(row sql.Row) (User, error) {
 	var lastLogin, created, updated string
 	user := new(User)
@@ -34,7 +30,7 @@ func (uc *UserRepository) parseUserFromRow(row sql.Row) (User, error) {
 		log.Println("Could not parse rows from db.", err)
 		return *user, err
 	}
-	location := uc.loadLocation()
+	location := utils.LoadLocation()
 	user.LastLogin, _ = time.ParseInLocation(time.RFC3339, lastLogin, &location)
 	user.Created, _ = time.ParseInLocation(time.RFC3339, created, &location)
 	user.Updated, _ = time.ParseInLocation(time.RFC3339, updated, &location)
@@ -43,14 +39,14 @@ func (uc *UserRepository) parseUserFromRow(row sql.Row) (User, error) {
 
 func (uc *UserRepository) GetUserById(id int) (User, error) {
 	row := uc.DB.QueryRow("SELECT * FROM USERS WHERE id=$1", id)
-	user, _ := uc.parseUserFromRow(*row)
-	return user, nil
+	user, err := uc.parseUserFromRow(*row)
+	return user, err
 }
 
 func (uc *UserRepository) GetUserByUsername(name string) (User, error) {
 	row := uc.DB.QueryRow("SELECT * FROM USERS WHERE username=$1", name)
-	user, _ := uc.parseUserFromRow(*row)
-	return user, nil
+	user, err := uc.parseUserFromRow(*row)
+	return user, err
 }
 
 func (uc *UserRepository) InsertUser(user *User) (*User, error) {
@@ -74,6 +70,7 @@ func (uc *UserRepository) GetUsers() ([]User, error) {
 		log.Println("Could not get users from db", err)
 		return nil, err
 	}
+	defer rows.Close()
 	users := make([]User, 0)
 	for rows.Next() {
 		user := new(User)
@@ -82,13 +79,12 @@ func (uc *UserRepository) GetUsers() ([]User, error) {
 		if err != nil {
 			log.Println("Could not read rows data", err)
 		}
-		location := uc.loadLocation()
+		location := utils.LoadLocation()
 		user.LastLogin, _ = time.ParseInLocation(time.RFC3339, lastLogin, &location)
 		user.Created, _ = time.ParseInLocation(time.RFC3339, created, &location)
 		user.Updated, _ = time.ParseInLocation(time.RFC3339, updated, &location)
 		users = append(users, *user)
 	}
-	_ = rows.Close()
 	return users, nil
 }
 
